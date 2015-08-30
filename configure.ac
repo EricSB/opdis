@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([opdis], [1.0.4], [community@thoughtgang.org])
+AC_INIT([opdis], [1.1.2], [community@thoughtgang.org])
 AM_INIT_AUTOMAKE([1.9 gnu subdir-objects])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -13,9 +13,12 @@ AC_CONFIG_FILES([Makefile])
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
-# Checks for libraries.
+# Checks for libraries. NOTE: libopcodes needs gettext and libintl.
 AC_CHECK_LIB([bfd], [bfd_init], [], [AC_MSG_ERROR([Missing GNU binutils])])
-AC_CHECK_LIB([opcodes], [init_disassemble_info], [], [AC_MSG_ERROR([Missing GNU binutils])])
+AC_SEARCH_LIBS([gettext], [intl, gettextlib], [], [AC_MSG_ERROR([Missing GNU gettext])])
+AC_CHECK_LIB([opcodes], [init_disassemble_info], [], [AC_MSG_ERROR([Missing GNU libopcodes])])
+# NOTE: This adds -liberty if libiberty is present. No error if not present.
+AC_CHECK_LIB([liberty], [hex_init], [], [])
 
 # Checks for header files.
 AC_CHECK_HEADERS([sys/types.h], [], [AC_MSG_ERROR([Missing UNIX libc headers])])

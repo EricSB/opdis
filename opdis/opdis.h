@@ -4,7 +4,7 @@
  * \details This defines the API for the libopdis library.
  * \author TG Community Developers <community@thoughtgang.org>
  * \note Copyright (c) 2010 ThoughtGang.
- * Released under the GNU Lesser Public License (LGPL), version 3.
+ * Released under the GNU Lesser Public License (LGPL), version 2.1.
  * See http://www.gnu.org/licenses/gpl.txt for details.
  */
 
@@ -341,20 +341,6 @@ opdis_t LIBCALL opdis_init_from_bfd( bfd * target );
  */
 void LIBCALL opdis_config_from_bfd( opdis_t o, bfd * target );
 
-/*!
- * \fn opdis_init_from_bfd( bfd * )
- * \ingroup bfd
- * \brief Initialize an opdis disassembler based on a BFD object
- * \details Allocates an opdis_t using opdis_init(), then configures libopcodes 
- * based on information (e.g. the architecture) in the BFD.
- * \param target A BFD object to operate on
- * \sa opdis_init_from_bfd
- * \return An opdis disassembler object
- * \note This requires that the BFD be configured correctly for the target
- *       architecture. See the documentation for libbfd in the GNU binutils
- *       distribution.
- */
-opdis_t LIBCALL opdis_init_from_bfd( bfd * target );
 
 /*!
  * \fn opdis_dupe()
@@ -393,6 +379,23 @@ void LIBCALL opdis_term( opdis_t o );
  *       All callbacks will be set to the default internal routines.
  */
 void LIBCALL opdis_set_defaults( opdis_t o );
+
+typedef void (*OPCODES_INIT) (struct disassemble_info *, void *, fprintf_ftype);
+
+/*!
+ * \fn opdis_override_opcodes_init( opdis_t o, OPCODES_INIT fn );
+ * \ingroup configuration
+ * \brief Invoke a custom libopcodes init_disassemble_info function
+ * This invokes the provided init_disassemble_info function in the config
+ * member of the opdis_t. This is used to apply a dynamically-loaded libopcodes
+ * to an opdis_t created by opdis_init.
+ * \param o opdis disassembler to configure.
+ * \param fn pointer to a libopcodes init_disassemble_info function
+ * \sa opdis_init opdis_set_arch opdis_set_disassembler_options
+ * \note This will reset o.config.disassembler, o.config.arch, o.config.mach, 
+ * o.config.application_data, and o.config.memory_error_func.
+ */
+void LIBCALL opdis_override_opcodes_init( opdis_t o, OPCODES_INIT fn );
 
 /*!
  * \enum opdis_x86_syntax_t

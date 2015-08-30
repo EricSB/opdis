@@ -1,6 +1,7 @@
 /*
- * howto_callbacks.c
- * Simple control-flow disassembler to test HOWTO callback code
+ * cflow_callback.c
+ * Simple control-flow disassembler example.
+ * Copied from tests/howto_callbacks.c just to have something in examples dir.
  */
 
 #include <errno.h>
@@ -12,8 +13,8 @@
 
 static int print_insn( opdis_insn_t * insn, void * arg ) {
 	const char * filename = (const char *) arg;
-	printf( "%08X [%s:%X]\t%s\n", (unsigned int) insn->vma, filename, 
-		(unsigned int) insn->offset, insn->ascii );
+	printf( "%08X [%s:%X]\t%s\n", insn->vma, filename, insn->offset,
+		insn->ascii );
 	return 1;
 }
 
@@ -24,8 +25,7 @@ static void my_display( const opdis_insn_t * insn, void * arg ) {
 
 	opdis_insn_tree_add( tree, i );
 
-	printf( "%d bytes at offset %X\n", (int) insn->size, 
-		(unsigned int) insn->offset );
+	printf( "%d bytes at offset %X\n", insn->size, insn->offset );
 }
 
 struct HANDLER_ARG { char halt_mnem[32]; opdis_t opdis; };

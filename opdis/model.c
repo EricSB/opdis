@@ -3,7 +3,7 @@
  * \brief Data model implementation for libopdis.
  * \author TG Community Developers <community@thoughtgang.org>
  * \note Copyright (c) 2010 ThoughtGang.
- * Released under the GNU Lesser Public License (LGPL), version 3.
+ * Released under the GNU Lesser Public License (LGPL), version 2.1.
  * See http://www.gnu.org/licenses/gpl.txt for details.
  */
 
@@ -63,7 +63,6 @@ opdis_insn_t * LIBCALL opdis_insn_alloc_fixed( size_t ascii_sz,
 		opdis_op_t * op = opdis_op_alloc_fixed( op_ascii_sz );
 		if ( op ) {
 			insn->operands[i] = op;
-			insn->alloc_operands++;
 		} else {
 			opdis_insn_free( insn );
 			return NULL;
@@ -214,11 +213,23 @@ void LIBCALL opdis_insn_free( opdis_insn_t * insn ) {
 		free( (void *) insn->mnemonic);
 	}
 
-	for ( i = 0; i < insn->num_operands; i++ ) {
+	if ( insn->prefixes ) {
+		free( (void *) insn->prefixes);
+	}
+
+	if ( insn->comment ) {
+		free( (void *) insn->comment);
+	}
+
+	for ( i = 0; i < insn->alloc_operands; i++ ) {
 		opdis_op_t * op = insn->operands[i];
 		if ( op ) {
 			opdis_op_free( op );
 		}
+	}
+
+	if ( insn->operands ) {
+		free( (void *) insn->operands);
 	}
 
 	free(insn);
@@ -452,6 +463,8 @@ void LIBCALL opdis_op_free( opdis_op_t * op ) {
 	if ( op->ascii ) {
 		free((void *) op->ascii);
 	}
+
+	free ((void *)op);
 }
 
 void LIBCALL opdis_op_set_ascii( opdis_op_t * op, const char * ascii ) {

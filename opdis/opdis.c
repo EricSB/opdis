@@ -3,7 +3,7 @@
  * \brief Disassembler front-end for libopcodes
  * \author TG Community Developers <community@thoughtgang.org>
  * \note Copyright (c) 2010 ThoughtGang.
- * Released under the GNU Lesser Public License (LGPL), version 3.
+ * Released under the GNU Lesser Public License (LGPL), version 2.1.
  * See http://www.gnu.org/licenses/gpl.txt for details.
  */
 
@@ -151,14 +151,19 @@ static void report_memory_error( int status, bfd_vma vma,
 /* ---------------------------------------------------------------------- */
 /* OPDIS MGT */
 
+
+static void invoke_opcodes_init( opdis_t o, OPCODES_INIT fn ) {
+	fn( &o->config, o, build_insn_fprintf );
+	o->config.application_data = (void *) o;
+	o->config.memory_error_func = report_memory_error;
+}
+
 opdis_t LIBCALL opdis_init( void ) {
 	opdis_t o = (opdis_t) calloc( sizeof(opdis_info_t), 1 );
 	
 	if ( o ) {
 		o->buf = opdis_insn_buf_alloc( 0, 0, 0 );
-		init_disassemble_info ( &o->config, o, build_insn_fprintf );
-		o->config.application_data = (void *) o;
-		o->config.memory_error_func = report_memory_error;
+		invoke_opcodes_init( o, init_disassemble_info );
 		opdis_set_defaults( o );
 	}
 
@@ -201,6 +206,7 @@ opdis_t LIBCALL opdis_dupe( opdis_t src ) {
 
 void LIBCALL opdis_term( opdis_t o ) {
 	if ( o ) {
+		opdis_insn_buf_free(o->buf);
 		free( o );
 	}
 }
@@ -235,6 +241,13 @@ void LIBCALL opdis_set_defaults( opdis_t o ) {
 	/* note: this sets the decoder */
 	opdis_set_x86_syntax( o, opdis_x86_syntax_intel );
 }
+
+void LIBCALL opdis_override_opcodes_init( opdis_t o, OPCODES_INIT fn ) {
+	invoke_opcodes_init( o, init_disassemble_info );
+	/* ensure arch, mach, and print_insn are unset. */
+	opdis_set_arch( o, bfd_arch_unknown, 0, NULL );
+}
+
 
 void LIBCALL opdis_set_disassembler_options( opdis_t o, const char * options ) {
 	if (! o ) {
@@ -335,7 +348,7 @@ void LIBCALL opdis_set_error_reporter( opdis_t o, OPDIS_ERROR fn, void * arg ) {
 // NOTE: This requires that opdis_set_buffer() have been called
 static unsigned int disasm_single_insn( opdis_t o, opdis_vma_t vma, 
 					opdis_insn_t * insn ) {
-	unsigned int size;
+	int size;
 
 	o->config.insn_info_valid = 0;
 	o->buf->item_count = 0;
@@ -344,7 +357,7 @@ static unsigned int disasm_single_insn( opdis_t o, opdis_vma_t vma,
 
 	o->config.stream = o;
 	size = o->disassembler( (bfd_vma) vma, &o->config );
-	if (! size ) {
+	if ( size < 1 ) {
 		char msg[32];
 		snprintf( msg, 31, "VMA %p: %02X\n", (void *) vma, 
 			  o->config.buffer[(vma - o->config.buffer_vma)] );
@@ -378,7 +391,7 @@ static unsigned int disasm_single_insn( opdis_t o, opdis_vma_t vma,
 	/* clear insn buffer now that decoding has taken place */
 	opdis_insn_buf_clear( o->buf );
 
-	return size;
+	return (unsigned int) size;
 }
 
 // size of single insn at address
@@ -463,6 +476,8 @@ static int disasm_linear( opdis_t o, opdis_vma_t vma, opdis_off_t length ) {
 	}
 
 	opdis_debug( o, 1, "End linear %p (count %d)", (void *) vma, count );
+
+	opdis_insn_free(insn);
 
 	return count;
 }
